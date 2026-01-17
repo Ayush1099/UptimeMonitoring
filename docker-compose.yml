@@ -1,0 +1,22 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: uptime_postgres
+    environment:
+      POSTGRES_DB: uptime_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5434:5432"
+    volumes:
+      - uptime_pgdata:/var/lib/postgresql/data
+  redis:
+    image: redis:7
+    container_name: uptime_redis
+    ports:
+      - "6379:6379"
+
+volumes:
+  uptime_pgdata:

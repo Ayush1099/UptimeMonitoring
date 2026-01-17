@@ -1,0 +1,56 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 18
+VisualStudioVersion = 18.1.11312.151
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UptimeMonitoring.Api", "UptimeMonitoring.Api\UptimeMonitoring.Api.csproj", "{F0DAC361-3742-4398-AB16-86E22691BF79}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UptimeMonitoring.Domain", "UptimeMonitoring.Domain\UptimeMonitoring.Domain.csproj", "{5D46D695-AF32-4794-A02E-C7310983875B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UptimeMonitoring.Application", "UptimeMonitoring.Application\UptimeMonitoring.Application.csproj", "{1DAAE543-D694-4E8A-BCB6-E12351D35894}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UptimeMonitoring.Infrastructure", "UptimeMonitoring.Infrastructure\UptimeMonitoring.Infrastructure.csproj", "{91670616-17D3-4C29-8D64-69EC9FBAB612}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{32E9C4BE-8E02-424C-8177-83E3ED41C2BF}"
+	ProjectSection(SolutionItems) = preProject
+		.github\workflows\ci.yml = .github\workflows\ci.yml
+		.github\workflows\deploy.yml = .github\workflows\deploy.yml
+		docker-compose.yml = docker-compose.yml
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UptimeMonitoring.Worker", "UptimeMonitoring.Worker\UptimeMonitoring.Worker.csproj", "{DFEDD10F-CCA1-4341-B073-EA9005137C68}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F0DAC361-3742-4398-AB16-86E22691BF79}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F0DAC361-3742-4398-AB16-86E22691BF79}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F0DAC361-3742-4398-AB16-86E22691BF79}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F0DAC361-3742-4398-AB16-86E22691BF79}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5D46D695-AF32-4794-A02E-C7310983875B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5D46D695-AF32-4794-A02E-C7310983875B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5D46D695-AF32-4794-A02E-C7310983875B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5D46D695-AF32-4794-A02E-C7310983875B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1DAAE543-D694-4E8A-BCB6-E12351D35894}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1DAAE543-D694-4E8A-BCB6-E12351D35894}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1DAAE543-D694-4E8A-BCB6-E12351D35894}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1DAAE543-D694-4E8A-BCB6-E12351D35894}.Release|Any CPU.Build.0 = Release|Any CPU
+		{91670616-17D3-4C29-8D64-69EC9FBAB612}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{91670616-17D3-4C29-8D64-69EC9FBAB612}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{91670616-17D3-4C29-8D64-69EC9FBAB612}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{91670616-17D3-4C29-8D64-69EC9FBAB612}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DFEDD10F-CCA1-4341-B073-EA9005137C68}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DFEDD10F-CCA1-4341-B073-EA9005137C68}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DFEDD10F-CCA1-4341-B073-EA9005137C68}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DFEDD10F-CCA1-4341-B073-EA9005137C68}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {2951B484-3C21-428D-A75E-D4C0EAC41B63}
+	EndGlobalSection
+EndGlobal
