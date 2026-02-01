@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using UptimeMonitoring.Application.DTOs;
@@ -27,8 +28,18 @@ public class WebsitesController : ControllerBase
     }
 
     [HttpPost]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)] // Added for duplicate website
     public async Task<IActionResult> Add(AddWebsiteRequest request)
     {
+        var existingWebsites = await _service.GetUserWebsitesAsync(GetUserId());
+        if (existingWebsites.Any(w => w.Url == request.Url))
+        {
+            return Conflict("Website with this URL already exists for the user.");
+        }
+
         await _service.AddWebsiteAsync(
             GetUserId(),
             request.Url,
@@ -39,6 +50,8 @@ public class WebsitesController : ControllerBase
     }
 
     [HttpGet]
+    [ProducesResponseType(typeof(IEnumerable<WebsiteResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Get()
     {
         var websites = await _service.GetUserWebsitesAsync(GetUserId());
@@ -54,20 +67,34 @@ public class WebsitesController : ControllerBase
         return Ok(result);
     }
     [HttpDelete("{websiteId:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Delete(Guid websiteId)
     {
-        await _service.DeleteWebsiteAsync(
+        bool deleted = await _service.DeleteWebsiteAsync(
             GetUserId(),
             websiteId
         );
 
-        return NoContent(); // 204
+        if (!deleted)
+        {
+            return NoContent();
+        }
+
+        return Ok("Website deleted successfully.");
     }
     [HttpPost("{websiteId:guid}/pause")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Pause(Guid websiteId)
     {
         var website = await _service.PauseAsync(GetUserId(), websiteId);
-
+        if (website == null)
+        {
+            return NoContent();
+        }
         return Ok(new
         {
             website.Id,
@@ -77,9 +104,16 @@ public class WebsitesController : ControllerBase
         });
     }
     [HttpPost("{websiteId:guid}/resume")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Resume(Guid websiteId)
     {
         var website = await _service.ResumeAsync(GetUserId(), websiteId);
+        if(website == null)
+        {
+            return NoContent();
+        }
 
         return Ok(new
         {

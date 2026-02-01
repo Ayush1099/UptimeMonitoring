@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 
 namespace UptimeMonitoring.Api.Controllers;
 
@@ -7,6 +8,7 @@ namespace UptimeMonitoring.Api.Controllers;
 public class HealthController : ControllerBase
 {
     [HttpGet]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     public IActionResult Get()
     {
         return Ok(new

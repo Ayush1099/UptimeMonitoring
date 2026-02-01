@@ -1,22 +1,63 @@
-version: "3.9"
-
 services:
   postgres:
     image: postgres:16
-    container_name: uptime_postgres
     environment:
-      POSTGRES_DB: uptime_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: uptime_monitoring
+      POSTGRES_USER: uptime
+      POSTGRES_PASSWORD: uptime
     ports:
-      - "5434:5432"
+      - "5000:5432" # Host:5000 -> Container:5432
+    healthcheck:
+      # Without -d, pg_isready defaults DB to the username ("uptime") which doesn't exist here
+      test: ["CMD-SHELL", "pg_isready -U uptime -d uptime_monitoring"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
     volumes:
-      - uptime_pgdata:/var/lib/postgresql/data
+      - uptime_pgdata_docker:/var/lib/postgresql/data
+
   redis:
     image: redis:7
-    container_name: uptime_redis
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build:
+      context: .
+      dockerfile: UptimeMonitoring.Api/Dockerfile
+    image: uptimemonitoring-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=uptime_monitoring;Username=uptime;Password=uptime
+      Redis__Connection: redis:6379
+
+  worker:
+    build:
+      context: .
+      dockerfile: UptimeMonitoring.Worker/Dockerfile
+    image: uptimemonitoring-worker
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=uptime_monitoring;Username=uptime;Password=uptime
+      Redis__Connection: redis:6379
 
 volumes:
-  uptime_pgdata:
+  uptime_pgdata_docker:

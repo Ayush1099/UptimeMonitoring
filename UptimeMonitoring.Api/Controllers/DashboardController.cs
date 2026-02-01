@@ -1,6 +1,8 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using UptimeMonitoring.Application.DTOs;
 using UptimeMonitoring.Application.Services;
 
 namespace UptimeMonitoring.Api.Controllers;
@@ -26,6 +28,8 @@ public class DashboardController : ControllerBase
     }
 
     [HttpGet("status")]
+    [ProducesResponseType(typeof(DashboardWebsiteStatusResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetStatus()
     {
         var result = await _service.GetStatusAsync(GetUserId());

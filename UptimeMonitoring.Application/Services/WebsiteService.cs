@@ -1,4 +1,4 @@
-﻿using UptimeMonitoring.Application.Interfaces;
+using UptimeMonitoring.Application.Interfaces;
 using UptimeMonitoring.Domain.Entities;
 
 namespace UptimeMonitoring.Application.Services;
@@ -33,12 +33,12 @@ public class WebsiteService
     {
         return await _repository.GetByUserIdAsync(userId);
     }
-    public async Task DeleteWebsiteAsync(Guid userId, Guid websiteId)
+    public async Task<bool> DeleteWebsiteAsync(Guid userId, Guid websiteId)
     {
         var website = await _repository.GetByIdAsync(websiteId);
 
         if (website == null)
-            throw new Exception("Website not found");
+            return false; // Website not found
 
         if (website.UserId != userId)
             throw new UnauthorizedAccessException();
@@ -48,6 +48,8 @@ public class WebsiteService
 
         // Delete website from DB
         await _repository.DeleteAsync(website);
+
+        return true;
     }
 
     public async Task<Website> PauseAsync(Guid userId, Guid websiteId)
@@ -66,12 +68,12 @@ public class WebsiteService
         return website;
     }
 
-    public async Task<Website> ResumeAsync(Guid userId, Guid websiteId)
+    public async Task<Website?> ResumeAsync(Guid userId, Guid websiteId)
     {
         var website = await _repository.GetByIdAsync(websiteId);
 
         if (website == null)
-            throw new Exception("Website not found");
+            return null;
 
         if (website.UserId != userId)
             throw new UnauthorizedAccessException();
