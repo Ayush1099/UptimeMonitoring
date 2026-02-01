@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using UptimeMonitoring.Application.DTOs;
 using UptimeMonitoring.Application.Interfaces;
 using UptimeMonitoring.Application.Services;
@@ -18,6 +19,8 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register")]
+    [ProducesResponseType(typeof(UserResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Register(RegisterUserRequest request)
     {
         var user = await _userService.RegisterAsync(
@@ -32,6 +35,9 @@ public class AuthController : ControllerBase
         });
     }
     [HttpPost("login")]
+    [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Login(LoginRequest request)
     {
         var user = await _userService.LoginAsync(
