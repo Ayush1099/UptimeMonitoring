@@ -1,3 +1,4 @@
+using UptimeMonitoring.Application.Common;
 using UptimeMonitoring.Application.Interfaces;
 using UptimeMonitoring.Domain.Entities;
 
@@ -14,7 +15,7 @@ public class WebsiteService
         _alertStateStore = alertStateStore;
     }
 
-    public async Task AddWebsiteAsync(Guid userId, string url, int intervalMinutes)
+    public async Task<Result> AddWebsiteAsync(Guid userId, string url, int intervalMinutes)
     {
         var website = new Website
         {
@@ -27,60 +28,60 @@ public class WebsiteService
         };
 
         await _repository.AddAsync(website);
+        return Result.Success();
     }
 
-    public async Task<List<Website>> GetUserWebsitesAsync(Guid userId)
+    public async Task<Result<List<Website>>> GetUserWebsitesAsync(Guid userId)
     {
-        return await _repository.GetByUserIdAsync(userId);
+        var websites = await _repository.GetByUserIdAsync(userId);
+        return Result<List<Website>>.Success(websites);
     }
-    public async Task<bool> DeleteWebsiteAsync(Guid userId, Guid websiteId)
+    public async Task<Result> DeleteWebsiteAsync(Guid userId, Guid websiteId)
     {
         var website = await _repository.GetByIdAsync(websiteId);
 
         if (website == null)
-            return false; // Website not found
+            return Result.Failure(Error.NotFound("Website not found."));
 
         if (website.UserId != userId)
-            throw new UnauthorizedAccessException();
+            return Result.Failure(Error.Unauthorized("You are not authorized to delete this website."));
 
-        // Delete Redis alert state
         await _alertStateStore.DeleteStateAsync(websiteId);
 
-        // Delete website from DB
         await _repository.DeleteAsync(website);
 
-        return true;
+        return Result.Success();
     }
 
-    public async Task<Website> PauseAsync(Guid userId, Guid websiteId)
+    public async Task<Result<Website>> PauseAsync(Guid userId, Guid websiteId)
     {
         var website = await _repository.GetByIdAsync(websiteId);
 
         if (website == null)
-            throw new Exception("Website not found");
+            return Result<Website>.Failure(Error.NotFound("Website not found."));
 
         if (website.UserId != userId)
-            throw new UnauthorizedAccessException();
+            return Result<Website>.Failure(Error.Unauthorized("You are not authorized to pause this website."));
 
         website.IsActive = false;
         await _repository.UpdateAsync(website);
 
-        return website;
+        return Result<Website>.Success(website);
     }
 
-    public async Task<Website?> ResumeAsync(Guid userId, Guid websiteId)
+    public async Task<Result<Website>> ResumeAsync(Guid userId, Guid websiteId)
     {
         var website = await _repository.GetByIdAsync(websiteId);
 
         if (website == null)
-            return null;
+            return Result<Website>.Failure(Error.NotFound("Website not found."));
 
         if (website.UserId != userId)
-            throw new UnauthorizedAccessException();
+            return Result<Website>.Failure(Error.Unauthorized("You are not authorized to resume this website."));
 
         website.IsActive = true;
         await _repository.UpdateAsync(website);
 
-        return website;
+        return Result<Website>.Success(website);
     }
 }

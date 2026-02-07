@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using UptimeMonitoring.Application.Common;
 using UptimeMonitoring.Application.DTOs;
 using UptimeMonitoring.Application.Services;
 
@@ -34,17 +35,20 @@ public class WebsitesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status409Conflict)] // Added for duplicate website
     public async Task<IActionResult> Add(AddWebsiteRequest request)
     {
-        var existingWebsites = await _service.GetUserWebsitesAsync(GetUserId());
-        if (existingWebsites.Any(w => w.Url == request.Url))
-        {
-            return Conflict("Website with this URL already exists for the user.");
-        }
-
-        await _service.AddWebsiteAsync(
+        var result = await _service.AddWebsiteAsync(
             GetUserId(),
             request.Url,
             request.CheckIntervalMinutes
         );
+
+        if (result.IsFailure)
+        {
+            return result.Error!.Code switch
+            {
+                "Conflict" => Conflict(result.Error.Message),
+                _ => BadRequest(result.Error.Message),
+            };
+        }
 
         return Ok();
     }
@@ -54,9 +58,20 @@ public class WebsitesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Get()
     {
-        var websites = await _service.GetUserWebsitesAsync(GetUserId());
+        var result = await _service.GetUserWebsitesAsync(GetUserId());
 
-        var result = websites.Select(w => new WebsiteResponse
+        if (result.IsFailure)
+        {
+            return result.Error!.Code switch
+            {
+                "Unauthorized" => Unauthorized(result.Error.Message),
+                _ => BadRequest(result.Error.Message),
+            };
+        }
+
+        var websites = result.Value!;
+
+        var response = websites.Select(w => new WebsiteResponse
         {
             Id = w.Id,
             Url = w.Url,
@@ -64,7 +79,7 @@ public class WebsitesController : ControllerBase
             CheckIntervalMinutes = w.CheckIntervalMinutes
         });
 
-        return Ok(result);
+        return Ok(response);
     }
     [HttpDelete("{websiteId:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -72,14 +87,19 @@ public class WebsitesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Delete(Guid websiteId)
     {
-        bool deleted = await _service.DeleteWebsiteAsync(
+        var result = await _service.DeleteWebsiteAsync(
             GetUserId(),
             websiteId
         );
 
-        if (!deleted)
+        if (result.IsFailure)
         {
-            return NoContent();
+            return result.Error!.Code switch
+            {
+                "NotFound" => NotFound(result.Error.Message),
+                "Unauthorized" => Unauthorized(result.Error.Message),
+                _ => BadRequest(result.Error.Message),
+            };
         }
 
         return Ok("Website deleted successfully.");
@@ -90,11 +110,17 @@ public class WebsitesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Pause(Guid websiteId)
     {
-        var website = await _service.PauseAsync(GetUserId(), websiteId);
-        if (website == null)
+        var result = await _service.PauseAsync(GetUserId(), websiteId);
+        if (result.IsFailure)
         {
-            return NoContent();
+            return result.Error!.Code switch
+            {
+                "NotFound" => NotFound(result.Error.Message),
+                "Unauthorized" => Unauthorized(result.Error.Message),
+                _ => BadRequest(result.Error.Message),
+            };
         }
+        var website = result.Value!;
         return Ok(new
         {
             website.Id,
@@ -109,11 +135,18 @@ public class WebsitesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Resume(Guid websiteId)
     {
-        var website = await _service.ResumeAsync(GetUserId(), websiteId);
-        if(website == null)
+        var result = await _service.ResumeAsync(GetUserId(), websiteId);
+        if(result.IsFailure)
         {
-            return NoContent();
+            return result.Error!.Code switch
+            {
+                "NotFound" => NotFound(result.Error.Message),
+                "Unauthorized" => Unauthorized(result.Error.Message),
+                _ => BadRequest(result.Error.Message),
+            };
         }
+
+        var website = result.Value!;
 
         return Ok(new
         {
