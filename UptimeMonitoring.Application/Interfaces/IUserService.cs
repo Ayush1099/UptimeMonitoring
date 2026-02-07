@@ -1,9 +1,10 @@
-﻿using UptimeMonitoring.Domain.Entities;
+using UptimeMonitoring.Application.Common;
+using UptimeMonitoring.Domain.Entities;
 
 namespace UptimeMonitoring.Application.Interfaces;
 
 public interface IUserService
 {
-    Task<User> RegisterAsync(string email, string password);
-    Task<User> LoginAsync(string email, string password);
+    Task<Result<User>> RegisterAsync(string email, string password);
+    Task<Result<User>> LoginAsync(string email, string password);
 }

@@ -1,4 +1,5 @@
-﻿using UptimeMonitoring.Application.DTOs;
+using UptimeMonitoring.Application.Common;
+using UptimeMonitoring.Application.DTOs;
 using UptimeMonitoring.Application.Interfaces;
 
 namespace UptimeMonitoring.Application.Services;

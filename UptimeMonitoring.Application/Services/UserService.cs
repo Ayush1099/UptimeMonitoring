@@ -1,5 +1,6 @@
-﻿using System.Security.Cryptography;
+using System.Security.Cryptography;
 using System.Text;
+using UptimeMonitoring.Application.Common;
 using UptimeMonitoring.Application.Interfaces;
 using UptimeMonitoring.Domain.Entities;
 
@@ -14,12 +15,12 @@ public class UserService : IUserService
         _userRepository = userRepository;
     }
 
-    public async Task<User> RegisterAsync(string email, string password)
+    public async Task<Result<User>> RegisterAsync(string email, string password)
     {
         var existingUser = await _userRepository.GetByEmailAsync(email);
         if (existingUser != null)
         {
-            throw new Exception("User already exists");
+            return Result<User>.Failure(Error.Conflict("User already exists"));
         }
 
         var user = new User
@@ -31,19 +32,19 @@ public class UserService : IUserService
         };
 
         await _userRepository.AddAsync(user);
-        return user;
+        return Result<User>.Success(user);
     }
-    public async Task<User> LoginAsync(string email, string password)
+    public async Task<Result<User>> LoginAsync(string email, string password)
     {
         var user = await _userRepository.GetByEmailAsync(email);
         if (user == null)
-            throw new Exception("Invalid credentials");
+            return Result<User>.Failure(Error.NotFound("User Not Found"));
 
         var hash = HashPassword(password);
         if (user.PasswordHash != hash)
-            throw new Exception("Invalid credentials");
+            return Result<User>.Failure(Error.Unauthorized("Invalid credentials"));
 
-        return user;
+        return Result<User>.Success(user);
     }
 
     private static string HashPassword(string password)
