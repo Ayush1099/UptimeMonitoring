@@ -1,9 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using UptimeMonitoring.Application.Common;
-using UptimeMonitoring.Application.DTOs;
 using UptimeMonitoring.Application.Services;
 
 namespace UptimeMonitoring.Api.Controllers;

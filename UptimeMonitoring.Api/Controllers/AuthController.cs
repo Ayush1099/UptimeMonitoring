@@ -1,9 +1,6 @@
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using UptimeMonitoring.Application.Common;
 using UptimeMonitoring.Application.DTOs;
 using UptimeMonitoring.Application.Interfaces;
-using UptimeMonitoring.Application.Services;
 
 namespace UptimeMonitoring.Api.Controllers;
 
