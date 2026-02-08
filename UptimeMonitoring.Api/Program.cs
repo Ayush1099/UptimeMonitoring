@@ -31,16 +31,29 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        // Read JWT configuration from environment variables with fallback to appsettings
+        var jwtKey = Environment.GetEnvironmentVariable("JWT_SECRET") 
+                     ?? builder.Configuration["Jwt:Key"] 
+                     ?? throw new InvalidOperationException("JWT secret key must be configured via JWT_SECRET environment variable or appsettings.json");
+        
+        var jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER") 
+                        ?? builder.Configuration["Jwt:Issuer"] 
+                        ?? "UptimeMonitoring";
+        
+        var jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") 
+                         ?? builder.Configuration["Jwt:Audience"] 
+                         ?? "UptimeMonitoringUsers";
+
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
+            ValidIssuer = jwtIssuer,
+            ValidAudience = jwtAudience,
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)
+                Encoding.UTF8.GetBytes(jwtKey)
             )
         };
         options.Events = new JwtBearerEvents

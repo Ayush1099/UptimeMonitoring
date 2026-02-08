@@ -1,8 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using UptimeMonitoring.Application.Common;
 using UptimeMonitoring.Application.DTOs;
 using UptimeMonitoring.Application.Services;
 
@@ -46,6 +44,7 @@ public class WebsitesController : ControllerBase
             return result.Error!.Code switch
             {
                 "Conflict" => Conflict(result.Error.Message),
+                "Validation" => BadRequest(result.Error.Message),
                 _ => BadRequest(result.Error.Message),
             };
         }
@@ -104,19 +103,21 @@ public class WebsitesController : ControllerBase
 
         return Ok("Website deleted successfully.");
     }
-    [HttpPost("{websiteId:guid}/pause")]
+    [HttpPost]
+    [Route("pause")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    public async Task<IActionResult> Pause(Guid websiteId)
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Pause([FromBody] WebsiteActionRequest request)
     {
-        var result = await _service.PauseAsync(GetUserId(), websiteId);
+        var result = await _service.PauseAsync(GetUserId(), request.Url);
         if (result.IsFailure)
         {
             return result.Error!.Code switch
             {
                 "NotFound" => NotFound(result.Error.Message),
-                "Unauthorized" => Unauthorized(result.Error.Message),
+                "Validation" => BadRequest(result.Error.Message),
                 _ => BadRequest(result.Error.Message),
             };
         }
@@ -129,19 +130,21 @@ public class WebsitesController : ControllerBase
             Status = "PAUSED"
         });
     }
-    [HttpPost("{websiteId:guid}/resume")]
+    [HttpPost]
+    [Route("resume")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    public async Task<IActionResult> Resume(Guid websiteId)
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Resume([FromBody] WebsiteActionRequest request)
     {
-        var result = await _service.ResumeAsync(GetUserId(), websiteId);
+        var result = await _service.ResumeAsync(GetUserId(), request.Url);
         if(result.IsFailure)
         {
             return result.Error!.Code switch
             {
                 "NotFound" => NotFound(result.Error.Message),
-                "Unauthorized" => Unauthorized(result.Error.Message),
+                "Validation" => BadRequest(result.Error.Message),
                 _ => BadRequest(result.Error.Message),
             };
         }

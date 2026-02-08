@@ -1,4 +1,4 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.Extensions.Configuration;
@@ -19,7 +19,25 @@ public class JwtTokenService : IJwtTokenService
 
     public string GenerateToken(User user)
     {
-        var key = Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!);
+        // Read JWT configuration from environment variables with fallback to appsettings
+        var jwtKey = Environment.GetEnvironmentVariable("JWT_SECRET") 
+                     ?? _configuration["Jwt:Key"] 
+                     ?? throw new InvalidOperationException("JWT secret key must be configured via JWT_SECRET environment variable or appsettings.json");
+        
+        var jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER") 
+                        ?? _configuration["Jwt:Issuer"] 
+                        ?? "UptimeMonitoring";
+        
+        var jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") 
+                         ?? _configuration["Jwt:Audience"] 
+                         ?? "UptimeMonitoringUsers";
+
+        var expiryMinutes = Environment.GetEnvironmentVariable("JWT_EXPIRY_MINUTES");
+        var expiryMinutesValue = expiryMinutes != null && int.TryParse(expiryMinutes, out var parsed) 
+                                  ? parsed 
+                                  : int.Parse(_configuration["Jwt:ExpiryMinutes"] ?? "60");
+
+        var key = Encoding.UTF8.GetBytes(jwtKey);
 
         var claims = new[]
         {
@@ -33,12 +51,10 @@ public class JwtTokenService : IJwtTokenService
         );
 
         var token = new JwtSecurityToken(
-            issuer: _configuration["Jwt:Issuer"],
-            audience: _configuration["Jwt:Audience"],
+            issuer: jwtIssuer,
+            audience: jwtAudience,
             claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(
-                int.Parse(_configuration["Jwt:ExpiryMinutes"]!)
-            ),
+            expires: DateTime.UtcNow.AddMinutes(expiryMinutesValue),
             signingCredentials: credentials
         );
 
