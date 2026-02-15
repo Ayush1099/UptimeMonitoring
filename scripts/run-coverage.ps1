@@ -14,7 +14,7 @@ dotnet test `
   --configuration Release `
   --collect:"XPlat Code Coverage" `
   --results-directory $TestResultsDir `
-  -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura
+  --settings coverlet.runsettings
 
 if ($LASTEXITCODE -ne 0) {
   Write-Host "Tests failed." -ForegroundColor Red
