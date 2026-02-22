@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="StackExchange.Redis" Version="2.10.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\UptimeMonitoring.Application\UptimeMonitoring.Application.csproj" />
+    <ProjectReference Include="..\UptimeMonitoring.Infrastructure\UptimeMonitoring.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>
