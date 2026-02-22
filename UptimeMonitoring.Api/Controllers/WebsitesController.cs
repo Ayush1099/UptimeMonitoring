@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using UptimeMonitoring.Application.DTOs;
@@ -27,23 +27,50 @@ public class WebsitesController : ControllerBase
     }
 
     [HttpPost]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)] // Added for duplicate website
     public async Task<IActionResult> Add(AddWebsiteRequest request)
     {
-        await _service.AddWebsiteAsync(
+        var result = await _service.AddWebsiteAsync(
             GetUserId(),
             request.Url,
             request.CheckIntervalMinutes
         );
 
+        if (result.IsFailure)
+        {
+            return result.Error!.Code switch
+            {
+                "Conflict" => Conflict(result.Error.Message),
+                "Validation" => BadRequest(result.Error.Message),
+                _ => BadRequest(result.Error.Message),
+            };
+        }
+
         return Ok();
     }
 
     [HttpGet]
+    [ProducesResponseType(typeof(IEnumerable<WebsiteResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Get()
     {
-        var websites = await _service.GetUserWebsitesAsync(GetUserId());
+        var result = await _service.GetUserWebsitesAsync(GetUserId());
 
-        var result = websites.Select(w => new WebsiteResponse
+        if (result.IsFailure)
+        {
+            return result.Error!.Code switch
+            {
+                "Unauthorized" => Unauthorized(result.Error.Message),
+                _ => BadRequest(result.Error.Message),
+            };
+        }
+
+        var websites = result.Value!;
+
+        var response = websites.Select(w => new WebsiteResponse
         {
             Id = w.Id,
             Url = w.Url,
@@ -51,23 +78,50 @@ public class WebsitesController : ControllerBase
             CheckIntervalMinutes = w.CheckIntervalMinutes
         });
 
-        return Ok(result);
+        return Ok(response);
     }
     [HttpDelete("{websiteId:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Delete(Guid websiteId)
     {
-        await _service.DeleteWebsiteAsync(
+        var result = await _service.DeleteWebsiteAsync(
             GetUserId(),
             websiteId
         );
 
-        return NoContent(); // 204
-    }
-    [HttpPost("{websiteId:guid}/pause")]
-    public async Task<IActionResult> Pause(Guid websiteId)
-    {
-        var website = await _service.PauseAsync(GetUserId(), websiteId);
+        if (result.IsFailure)
+        {
+            return result.Error!.Code switch
+            {
+                "NotFound" => NotFound(result.Error.Message),
+                "Unauthorized" => Unauthorized(result.Error.Message),
+                _ => BadRequest(result.Error.Message),
+            };
+        }
 
+        return Ok("Website deleted successfully.");
+    }
+    [HttpPost]
+    [Route("pause")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Pause([FromBody] WebsiteActionRequest request)
+    {
+        var result = await _service.PauseAsync(GetUserId(), request.Url);
+        if (result.IsFailure)
+        {
+            return result.Error!.Code switch
+            {
+                "NotFound" => NotFound(result.Error.Message),
+                "Validation" => BadRequest(result.Error.Message),
+                _ => BadRequest(result.Error.Message),
+            };
+        }
+        var website = result.Value!;
         return Ok(new
         {
             website.Id,
@@ -76,10 +130,26 @@ public class WebsitesController : ControllerBase
             Status = "PAUSED"
         });
     }
-    [HttpPost("{websiteId:guid}/resume")]
-    public async Task<IActionResult> Resume(Guid websiteId)
+    [HttpPost]
+    [Route("resume")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Resume([FromBody] WebsiteActionRequest request)
     {
-        var website = await _service.ResumeAsync(GetUserId(), websiteId);
+        var result = await _service.ResumeAsync(GetUserId(), request.Url);
+        if(result.IsFailure)
+        {
+            return result.Error!.Code switch
+            {
+                "NotFound" => NotFound(result.Error.Message),
+                "Validation" => BadRequest(result.Error.Message),
+                _ => BadRequest(result.Error.Message),
+            };
+        }
+
+        var website = result.Value!;
 
         return Ok(new
         {

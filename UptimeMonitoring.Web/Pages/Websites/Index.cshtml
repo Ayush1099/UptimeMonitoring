@@ -1,0 +1,138 @@
+@page
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@model UptimeMonitoring.Web.Pages.Websites.IndexModel
+@{
+    ViewData["Title"] = "My websites";
+}
+
+<h2>My websites</h2>
+
+<div class="card mb-4">
+    <div class="card-header">Add website</div>
+    <div class="card-body">
+        <form method="post" asp-page-handler="Add">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-5">
+                    <label asp-for="AddInput.Url" class="form-label"></label>
+                    <input asp-for="AddInput.Url" class="form-control" placeholder="https://example.com" />
+                    <span asp-validation-for="AddInput.Url" class="text-danger"></span>
+                </div>
+                <div class="col-md-3">
+                    <label asp-for="AddInput.CheckIntervalMinutes" class="form-label"></label>
+                    <select asp-for="AddInput.CheckIntervalMinutes" class="form-select">
+                        <option value="1">1 min</option>
+                        <option value="5">5 min</option>
+                        <option value="15">15 min</option>
+                        <option value="30">30 min</option>
+                        <option value="60">60 min</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">Add</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@if (Model.Websites.Count == 0)
+{
+    <p class="text-muted">No websites yet. Add one above to start monitoring.</p>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>URL</th>
+                    <th>Interval</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var site in Model.Websites)
+                {
+                    <tr>
+                        <td>@site.Url</td>
+                        <td>@site.CheckIntervalMinutes min</td>
+                        <td>
+                            <span class="badge @(site.IsActive ? "bg-success" : "bg-secondary")">
+                                @(site.IsActive ? "Active" : "Paused")
+                            </span>
+                        </td>
+                        <td>
+                            @if (site.IsActive)
+                            {
+                                <form method="post" asp-page-handler="Pause" class="d-inline">
+                                    <input type="hidden" name="url" value="@site.Url" />
+                                    <button type="submit" class="btn btn-sm btn-warning">Pause</button>
+                                </form>
+                            }
+                            else
+                            {
+                                <form method="post" asp-page-handler="Resume" class="d-inline">
+                                    <input type="hidden" name="url" value="@site.Url" />
+                                    <button type="submit" class="btn btn-sm btn-success">Resume</button>
+                                </form>
+                            }
+                            <form id="delete-form-@site.Id" method="post" asp-page-handler="Delete" class="d-inline">
+                                <input type="hidden" name="websiteId" value="@site.Id" />
+                                <button type="button" class="btn btn-sm btn-danger btn-delete-website" data-form-id="delete-form-@site.Id">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteConfirmModalLabel">Delete website</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to delete this website?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No</button>
+                <button type="button" class="btn btn-danger" id="deleteConfirmYes">Yes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            var deleteModal = document.getElementById('deleteConfirmModal');
+            var deleteConfirmYes = document.getElementById('deleteConfirmYes');
+            var pendingFormId = null;
+
+            if (!deleteModal || !deleteConfirmYes) return;
+
+            document.querySelectorAll('.btn-delete-website').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    pendingFormId = this.getAttribute('data-form-id');
+                    var modal = bootstrap.Modal.getOrCreateInstance(deleteModal);
+                    modal.show();
+                });
+            });
+
+            deleteConfirmYes.addEventListener('click', function () {
+                if (pendingFormId) {
+                    var form = document.getElementById(pendingFormId);
+                    if (form) form.submit();
+                    pendingFormId = null;
+                }
+                bootstrap.Modal.getInstance(deleteModal).hide();
+            });
+        })();
+    </script>
+}

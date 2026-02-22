@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using UptimeMonitoring.Application.Interfaces;
 using UptimeMonitoring.Domain.Entities;
 using UptimeMonitoring.Infrastructure.Persistence;
@@ -36,6 +36,12 @@ public class WebsiteRepository : IWebsiteRepository
     {
         return await _dbContext.Websites
             .FirstOrDefaultAsync(w => w.Id == websiteId);
+    }
+
+    public async Task<Website?> GetByUserIdAndUrlAsync(Guid userId, string url)
+    {
+        return await _dbContext.Websites
+            .FirstOrDefaultAsync(w => w.UserId == userId && w.Url.ToLower() == url.ToLower());
     }
 
     public async Task DeleteAsync(Website website)

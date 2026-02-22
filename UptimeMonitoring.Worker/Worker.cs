@@ -1,8 +1,6 @@
 using System.Diagnostics;
 using UptimeMonitoring.Application.Interfaces;
 using UptimeMonitoring.Domain.Entities;
-using UptimeMonitoring.Infrastructure.Email;
-using UptimeMonitoring.Infrastructure.Redis;
 
 namespace UptimeMonitoring.Worker;
 
@@ -34,32 +32,59 @@ public class Worker : BackgroundService
             var resultRepository =
                 scope.ServiceProvider.GetRequiredService<IMonitoringResultRepository>();
 
-            var websites = await websiteRepository.GetAllActiveAsync();
+            var userRepository =
+                scope.ServiceProvider.GetRequiredService<IUserRepository>();
 
-            var services = scope.ServiceProvider;
+            var alertStateStore =
+                scope.ServiceProvider.GetRequiredService<IAlertStateStore>();
+
+            var emailSender =
+                scope.ServiceProvider.GetRequiredService<IEmailSender>();
+
+            var websites = await websiteRepository.GetAllActiveAsync();
 
             foreach (var website in websites)
             {
-                await CheckWebsiteAsync(website, services);
+                try
+                {
+                    var latest = await resultRepository.GetLatestByWebsiteIdAsync(website.Id);
+                    var intervalMinutes = website.CheckIntervalMinutes <= 0 ? 5 : website.CheckIntervalMinutes;
+                    var interval = TimeSpan.FromMinutes(intervalMinutes);
+
+                    if (latest != null && (DateTime.UtcNow - latest.CheckedAt) < interval)
+                        continue;
+
+                    await CheckWebsiteAsync(
+                        website,
+                        resultRepository,
+                        alertStateStore,
+                        userRepository,
+                        emailSender,
+                        stoppingToken);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error checking website {WebsiteId} ({Url})", website.Id, website.Url);
+                }
             }
-            await Task.Delay(TimeSpan.FromMinutes(2), stoppingToken);
+            await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
         }
     }
 
     private async Task CheckWebsiteAsync(
         Website website,
-        IServiceProvider services)
+        IMonitoringResultRepository resultRepository,
+        IAlertStateStore alertStateStore,
+        IUserRepository userRepository,
+        IEmailSender emailSender,
+        CancellationToken stoppingToken)
     {
-        var alertStore = services.GetRequiredService<AlertStateStore>();
-        var emailSender = services.GetRequiredService<SmtpEmailSender>();
-        var resultRepo = services.GetRequiredService<IMonitoringResultRepository>();
-
         var stopwatch = Stopwatch.StartNew();
         bool isUp;
 
         try
         {
-            var response = await _httpClient.GetAsync(website.Url);
+            var response = await _httpClient.GetAsync(website.Url, stoppingToken);
             isUp = response.IsSuccessStatusCode;
         }
         catch
@@ -69,47 +94,74 @@ public class Worker : BackgroundService
 
         stopwatch.Stop();
 
-        // Save result
-        await resultRepo.AddAsync(new MonitoringResult
+        var result = new MonitoringResult
         {
             Id = Guid.NewGuid(),
             WebsiteId = website.Id,
             IsUp = isUp,
             ResponseTimeMs = (int)stopwatch.ElapsedMilliseconds,
             CheckedAt = DateTime.UtcNow
-        });
+        };
 
-        // Redis logic
-        var lastState = await alertStore.GetLastStateAsync(website.Id);
+        await resultRepository.AddAsync(result);
+
+        await HandleAlertAsync(
+            website,
+            isUp,
+            alertStateStore,
+            userRepository,
+            emailSender,
+            stoppingToken);
+
+        _logger.LogInformation(
+            "Checked {url} - Status: {status}",
+            website.Url,
+            isUp ? "UP" : "DOWN"
+        );
+    }
+
+    private async Task HandleAlertAsync(
+        Website website,
+        bool isUp,
+        IAlertStateStore alertStateStore,
+        IUserRepository userRepository,
+        IEmailSender emailSender,
+        CancellationToken stoppingToken)
+    {
+        var lastState = await alertStateStore.GetLastStateAsync(website.Id);
 
         if (lastState == null)
         {
-            // first time
-            await alertStore.SetStateAsync(website.Id, isUp);
+            await alertStateStore.SetStateAsync(website.Id, isUp);
+            return;
+        }
+        if (lastState.Value == isUp)
+            return;
+
+        var user = await userRepository.GetByIdAsync(website.UserId);
+        if (user == null || string.IsNullOrWhiteSpace(user.Email))
+        {
+            await alertStateStore.SetStateAsync(website.Id, isUp);
             return;
         }
 
-        // DOWN detected
-        if (lastState == true && isUp == false)
+        if (lastState.Value && !isUp)
         {
             await emailSender.SendAsync(
-                "ayush99verma@email.com",
-                "Website DOWN",
-                $"{website.Url} is DOWN"
-            );
+                user.Email,
+                $"[UptimeMonitoring] DOWN: {website.Url}",
+                $"{website.Url} appears DOWN at {DateTime.UtcNow:O}.",
+                stoppingToken);
         }
-
-        // UP recovery
-        if (lastState == false && isUp == true)
+        else if (!lastState.Value && isUp)
         {
             await emailSender.SendAsync(
-                "user@email.com",
-                "Website UP",
-                $"{website.Url} is back UP"
-            );
+                user.Email,
+                $"[UptimeMonitoring] RECOVERED: {website.Url}",
+                $"{website.Url} is back UP at {DateTime.UtcNow:O}.",
+                stoppingToken);
         }
 
-        await alertStore.SetStateAsync(website.Id, isUp);
+        await alertStateStore.SetStateAsync(website.Id, isUp);
     }
-
 }

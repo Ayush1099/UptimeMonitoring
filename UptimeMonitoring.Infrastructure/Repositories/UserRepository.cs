@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using UptimeMonitoring.Application.Interfaces;
 using UptimeMonitoring.Domain.Entities;
 using UptimeMonitoring.Infrastructure.Persistence;
@@ -20,9 +20,21 @@ public class UserRepository : IUserRepository
             .FirstOrDefaultAsync(u => u.Email == email);
     }
 
+    public async Task<User?> GetByIdAsync(Guid userId)
+    {
+        return await _dbContext.Users
+            .FirstOrDefaultAsync(u => u.Id == userId);
+    }
+
     public async Task AddAsync(User user)
     {
         _dbContext.Users.Add(user);
+        await _dbContext.SaveChangesAsync();
+    }
+
+    public async Task UpdateAsync(User user)
+    {
+        _dbContext.Users.Update(user);
         await _dbContext.SaveChangesAsync();
     }
 }

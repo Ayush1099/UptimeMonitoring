@@ -12,8 +12,8 @@ using UptimeMonitoring.Infrastructure.Persistence;
 namespace UptimeMonitoring.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260111053218_AddMonitoringResults")]
-    partial class AddMonitoringResults
+    [Migration("20260125160317_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -66,6 +66,9 @@ namespace UptimeMonitoring.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Email")
+                        .IsUnique();
 
                     b.ToTable("Users");
                 });

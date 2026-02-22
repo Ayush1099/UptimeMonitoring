@@ -1,7 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using UptimeMonitoring.Application.DTOs;
 using UptimeMonitoring.Application.Interfaces;
-using UptimeMonitoring.Application.Services;
 
 namespace UptimeMonitoring.Api.Controllers;
 
@@ -18,28 +17,52 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register")]
+    [ProducesResponseType(typeof(UserResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Register(RegisterUserRequest request)
     {
-        var user = await _userService.RegisterAsync(
+        var result = await _userService.RegisterAsync(
             request.Email,
             request.Password
         );
+
+        if (result.IsFailure)
+        {
+            return result.Error!.Code switch
+            {
+                "Conflict" => Conflict(result.Error.Message),
+                _ => BadRequest(result.Error.Message),
+            };
+        }
 
         return Ok(new UserResponse
         {
-            Id = user.Id,
-            Email = user.Email
+            Id = result.Value!.Id,
+            Email = result.Value.Email
         });
     }
     [HttpPost("login")]
+    [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Login(LoginRequest request)
     {
-        var user = await _userService.LoginAsync(
+        var result = await _userService.LoginAsync(
             request.Email,
             request.Password
         );
 
-        var token = _jwtTokenService.GenerateToken(user);
+        if (result.IsFailure)
+        {
+            return result.Error!.Code switch
+            {
+                "NotFound" => NotFound(result.Error.Message),
+                "Unauthorized" => BadRequest(result.Error.Message),
+                _ => BadRequest(result.Error.Message),
+            };
+        }
+
+        var token = _jwtTokenService.GenerateToken(result.Value!);
 
         return Ok(new LoginResponse
         {

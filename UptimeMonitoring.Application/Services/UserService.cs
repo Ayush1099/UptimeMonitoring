@@ -1,5 +1,7 @@
-﻿using System.Security.Cryptography;
+using System.Security.Cryptography;
 using System.Text;
+using BCrypt.Net;
+using UptimeMonitoring.Application.Common;
 using UptimeMonitoring.Application.Interfaces;
 using UptimeMonitoring.Domain.Entities;
 
@@ -14,12 +16,12 @@ public class UserService : IUserService
         _userRepository = userRepository;
     }
 
-    public async Task<User> RegisterAsync(string email, string password)
+    public async Task<Result<User>> RegisterAsync(string email, string password)
     {
         var existingUser = await _userRepository.GetByEmailAsync(email);
         if (existingUser != null)
         {
-            throw new Exception("User already exists");
+            return Result<User>.Failure(Error.Conflict("User already exists"));
         }
 
         var user = new User
@@ -31,27 +33,70 @@ public class UserService : IUserService
         };
 
         await _userRepository.AddAsync(user);
-        return user;
+        return Result<User>.Success(user);
     }
-    public async Task<User> LoginAsync(string email, string password)
+    public async Task<Result<User>> LoginAsync(string email, string password)
     {
         var user = await _userRepository.GetByEmailAsync(email);
         if (user == null)
-            throw new Exception("Invalid credentials");
+            return Result<User>.Failure(Error.NotFound("User Not Found"));
 
-        var hash = HashPassword(password);
-        if (user.PasswordHash != hash)
-            throw new Exception("Invalid credentials");
+        var (isValid, needsMigration) = VerifyPassword(password, user.PasswordHash);
+        
+        if (!isValid)
+            return Result<User>.Failure(Error.Unauthorized("Invalid credentials"));
 
-        return user;
+        // Automatically migrate password from SHA256 to BCrypt if needed
+        if (needsMigration)
+        {
+            user.PasswordHash = HashPassword(password);
+            await _userRepository.UpdateAsync(user);
+        }
+
+        return Result<User>.Success(user);
     }
 
     private static string HashPassword(string password)
     {
-        using var sha256 = SHA256.Create();
-        var bytes = Encoding.UTF8.GetBytes(password);
-        var hash = sha256.ComputeHash(bytes);
-        return Convert.ToBase64String(hash);
+        return BCrypt.Net.BCrypt.HashPassword(password, workFactor: 12);
+    }
+
+    private static (bool isValid, bool needsMigration) VerifyPassword(string password, string passwordHash)
+    {
+        // Check if the hash is a BCrypt hash (starts with $2a$, $2b$, $2x$, or $2y$)
+        if (passwordHash.StartsWith("$2a$") || passwordHash.StartsWith("$2b$") || 
+            passwordHash.StartsWith("$2x$") || passwordHash.StartsWith("$2y$"))
+        {
+            // BCrypt hash - verify normally
+            try
+            {
+                var isValid = BCrypt.Net.BCrypt.Verify(password, passwordHash);
+                return (isValid, false);
+            }
+            catch
+            {
+                // Invalid BCrypt hash format
+                return (false, false);
+            }
+        }
+        else
+        {
+            // Legacy SHA256 hash - verify and mark for migration
+            try
+            {
+                using var sha256 = SHA256.Create();
+                var bytes = Encoding.UTF8.GetBytes(password);
+                var hash = sha256.ComputeHash(bytes);
+                var computedHash = Convert.ToBase64String(hash);
+                
+                var isValid = passwordHash.Equals(computedHash, StringComparison.Ordinal);
+                return (isValid, isValid); // If valid, needs migration to BCrypt
+            }
+            catch
+            {
+                return (false, false);
+            }
+        }
     }
 
 }
