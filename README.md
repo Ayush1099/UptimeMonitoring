@@ -2,6 +2,10 @@
 
 API + background worker that periodically checks your websites, stores results, and (optionally) sends email alerts on UP/DOWN transitions.
 
+<img width="1912" height="867" alt="image" src="https://github.com/user-attachments/assets/0fd6aa25-79a8-4631-8897-ba0376e06ef4" />
+<img width="1918" height="516" alt="image" src="https://github.com/user-attachments/assets/3afec82f-fabd-4dfa-97f4-5616ba554940" />
+<img width="1908" height="705" alt="image" src="https://github.com/user-attachments/assets/65dd98f2-4d24-4db9-9587-e2a9479c1517" />
+
 ## Run with Docker (recommended)
 
 From the repo root:
