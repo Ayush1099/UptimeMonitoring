@@ -65,6 +65,10 @@ services:
       dockerfile: UptimeMonitoring.Web/Dockerfile
     image: uptimemonitoring-web
     depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
       api:
         condition: service_started
     ports:
@@ -72,6 +76,8 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=uptime_monitoring;Username=uptime;Password=uptime
+      Redis__Connection: redis:6379
 
 volumes:
   uptime_pgdata_docker:
