@@ -70,4 +70,5 @@ Email sending is **disabled by default**. Configure in `appsettings.json` / `app
 - `Smtp__Username=...`
 - `Smtp__Password=...`
 - `Smtp__From=alerts@example.com`
+<img width="1912" height="867" alt="image" src="https://github.com/user-attachments/assets/5a1c36d3-e564-4b46-8739-2f0bef76ae27" />
 
