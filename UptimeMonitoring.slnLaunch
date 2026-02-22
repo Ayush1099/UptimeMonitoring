@@ -1,0 +1,19 @@
+[
+  {
+    "Name": "New Profile",
+    "Projects": [
+      {
+        "Path": "UptimeMonitoring.Api\\UptimeMonitoring.Api.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "UptimeMonitoring.Worker\\UptimeMonitoring.Worker.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "UptimeMonitoring.Web\\UptimeMonitoring.Web.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]
