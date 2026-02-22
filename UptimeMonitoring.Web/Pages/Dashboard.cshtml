@@ -1,0 +1,45 @@
+@page
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@model DashboardModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<h2>Dashboard</h2>
+
+@if (Model.Statuses.Count == 0)
+{
+    <p class="text-muted">No websites yet. <a asp-page="/Websites/Index">Add a website</a> to start monitoring.</p>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>URL</th>
+                    <th>Status</th>
+                    <th>Last checked</th>
+                    <th>Response time</th>
+                    <th>Uptime (24h)</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.Statuses)
+                {
+                    <tr>
+                        <td>@item.Url</td>
+                        <td>
+                            <span class="badge @(item.Status == "UP" ? "bg-success" : item.Status == "DOWN" ? "bg-danger" : item.Status == "PAUSED" ? "bg-secondary" : "bg-warning text-dark")">
+                                @item.Status
+                            </span>
+                        </td>
+                        <td>@(item.LastCheckedAt?.ToString("g") ?? "—")</td>
+                        <td>@(item.ResponseTimeMs.HasValue ? $"{item.ResponseTimeMs} ms" : "—")</td>
+                        <td>@(item.UptimePercentage.HasValue ? $"{item.UptimePercentage}%" : "—")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

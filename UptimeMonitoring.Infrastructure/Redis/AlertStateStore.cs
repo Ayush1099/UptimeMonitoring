@@ -1,4 +1,4 @@
-﻿using StackExchange.Redis;
+using StackExchange.Redis;
 using UptimeMonitoring.Application.Interfaces;
 
 namespace UptimeMonitoring.Infrastructure.Redis;
@@ -33,7 +33,18 @@ public class AlertStateStore : IAlertStateStore
     }
     public async Task DeleteStateAsync(Guid websiteId)
     {
-        await _db.KeyDeleteAsync($"website:state:{websiteId}");
+        try
+        {
+            await _db.KeyDeleteAsync(GetKey(websiteId));
+        }
+        catch (RedisConnectionException)
+        {
+            // Redis unavailable (e.g. not running locally); allow delete to succeed without cleaning cache
+        }
+        catch (RedisTimeoutException)
+        {
+            // Redis slow/unavailable; allow delete to succeed
+        }
     }
 
 }

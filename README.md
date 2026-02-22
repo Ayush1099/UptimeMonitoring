@@ -36,6 +36,17 @@ Run Worker (in a separate terminal):
 dotnet run --project UptimeMonitoring.Worker
 ```
 
+Run Web UI (in a third terminal):
+
+```bash
+dotnet run --project UptimeMonitoring.Web
+```
+
+- Web UI: `http://localhost:5001`
+- API: `http://localhost:5248/swagger` (when running locally)
+
+**Note**: API and Web are separate applications. They share the same database and run as two processes/hosts/containers. The Web project uses cookie-based auth; the API uses JWT for other clients (e.g. mobile, SPA).
+
 ## Basic usage (API)
 
 - **Register**: `POST /api/auth/register`
@@ -43,6 +54,10 @@ dotnet run --project UptimeMonitoring.Worker
 - **Add website** (auth required): `POST /api/websites`
 - **List websites** (auth required): `GET /api/websites`
 - **Dashboard status** (auth required): `GET /api/dashboard/status`
+
+## Web UI (UptimeMonitoring.Web)
+
+Browser-based UI using Razor Pages and cookie auth. Pages: Login, Register, Dashboard, My websites. Add/remove/pause/resume websites via the UI. Runs on its own port (default 5000); uses the same database and Redis as the API.
 
 ## Email alerts (optional)
 
