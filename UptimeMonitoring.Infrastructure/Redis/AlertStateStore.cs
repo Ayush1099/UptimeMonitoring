@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
 using UptimeMonitoring.Application.Interfaces;
 
@@ -6,10 +7,12 @@ namespace UptimeMonitoring.Infrastructure.Redis;
 public class AlertStateStore : IAlertStateStore
 {
     private readonly IDatabase _db;
+    private readonly ILogger<AlertStateStore> _logger;
 
-    public AlertStateStore(IConnectionMultiplexer redis)
+    public AlertStateStore(IConnectionMultiplexer redis, ILogger<AlertStateStore> logger)
     {
         _db = redis.GetDatabase();
+        _logger = logger;
     }
 
     private static string GetKey(Guid websiteId)
@@ -37,13 +40,21 @@ public class AlertStateStore : IAlertStateStore
         {
             await _db.KeyDeleteAsync(GetKey(websiteId));
         }
-        catch (RedisConnectionException)
+        catch (RedisConnectionException ex)
         {
-            // Redis unavailable (e.g. not running locally); allow delete to succeed without cleaning cache
+            _logger.LogWarning(ex, "Redis connection unavailable while deleting state for website {WebsiteId}; allowing delete to succeed without cleaning cache", websiteId);
         }
-        catch (RedisTimeoutException)
+        catch (RedisTimeoutException ex)
         {
-            // Redis slow/unavailable; allow delete to succeed
+            _logger.LogWarning(ex, "Redis timeout while deleting state for website {WebsiteId}; allowing delete to succeed", websiteId);
+        }
+        catch (RedisException ex)
+        {
+            _logger.LogWarning(ex, "Redis error while deleting state for website {WebsiteId}; allowing delete to succeed", websiteId);
+        }
+        catch (ObjectDisposedException ex)
+        {
+            _logger.LogWarning(ex, "Redis connection disposed while deleting state for website {WebsiteId}; allowing delete to succeed", websiteId);
         }
     }
 
